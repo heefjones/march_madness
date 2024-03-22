@@ -1,6 +1,8 @@
 # data folder
 data/
 
+trash.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
