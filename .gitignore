@@ -1,6 +1,9 @@
 # ignore
 data/
-trash.ipynb
+
+# some extra notebooks
+intra_bracket.ipynb
+visualizations.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
