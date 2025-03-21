@@ -35,6 +35,7 @@ A “chalk” bracket (always picking the higher seed or better win percentage w
 - 🛠️ helper.py – Custom functions for data processing, visualization, and model training.
 
 ## Repository Structure
+```
 /march_madness
 ├── eda_compact.ipynb
 ├── preds_compact.ipynb
@@ -45,3 +46,4 @@ A “chalk” bracket (always picking the higher seed or better win percentage w
 │   ├── models_compact.csv
 │   └── models_detailed.csv
 └── README.md
+```
