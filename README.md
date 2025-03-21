@@ -1,5 +1,4 @@
 # [March Machine Learning Mania 2025](https://www.kaggle.com/competitions/march-machine-learning-mania-2024/overview) 🏀
-## Intro
 There are __9,223,372,036,854,775,808__ (2^63) possible bracket combinations. To guarantee a perfect bracket, each of the 8 billion people on Earth would need to generate over 1 billion unique brackets. This Kaggle competition tasked me with calculating win probabilities for all possible March Madness matchups in both the men's and women's tournaments.
 
 ## Data
@@ -27,11 +26,13 @@ A “chalk” bracket (always picking the higher seed or better win percentage w
 - Despite minimal improvement, the unpredictability of March Madness makes significant accuracy gains challenging. This is also the reason so many people love to tune in.
 
 ## Files
-📊 eda_compact.ipynb – EDA and feature engineering with compact data.
-📊 eda_detailed.ipynb – EDA and feature engineering with detailed data.
-🤖 preds_compact.ipynb – Model testing on compact features for both tournaments.
-🤖 preds_detailed.ipynb – Model testing on detailed features for both tournaments.
-🛠️ helper.py – Custom functions for data processing, visualization, and model training.
+- 📊 eda_compact.ipynb – EDA and feature engineering with compact data.
+- 📊 eda_detailed.ipynb – EDA and feature engineering with detailed data.
+- 🤖 preds_compact.ipynb – Model testing on compact features for both tournaments.
+- 🤖 preds_detailed.ipynb – Model testing on detailed features for both tournaments.
+- 📈 models_compact.csv – Model performance results/metrics and hyperparameters for compact data.
+- 📈 models_detailed.csv – Model performance results/metrics and hyperparameters for detailed data.
+- 🛠️ helper.py – Custom functions for data processing, visualization, and model training.
 
 ## Repository Structure
 /march_madness
