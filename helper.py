@@ -38,9 +38,9 @@ sns.set(style='whitegrid', font='Average')
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 # global vars
-ROOT = 'data/'
-MENS_ROOT = 'data/mens/'
-WOMENS_ROOT = 'data/womens/'
+ROOT = './data/'
+MENS_ROOT = './data/mens/'
+WOMENS_ROOT = './data/womens/'
 
 # set numpy seed
 SEED = 9
@@ -765,3 +765,183 @@ def aggregate_detailed_stats(df):
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
+def bayes_opt_nn(df, init_points=10, n_iter=100):
+    """
+    Perform Bayesian optimization to tune hyperparameters of a two-tower neural network for a binary classification task.
+
+    Parameters:
+    - df: DataFrame containing the features and labels
+    - scaler: Scaler object to scale the features
+    - init_points: Number of random points to sample before starting Bayesian optimization
+    - n_iter: Number of optimization iterations
+
+    Returns: None
+    """
+
+    # check for gpu
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'Using device: {device}')
+
+    # assume 84 features: 42 for team X and 42 for team Y
+    total_features = 84
+    team_features = total_features // 2
+
+    # sort the columns of X based on the last two characters of each column name (ensures that the team _X columns come before the team_Y columns)
+    sorted_columns = sorted(df.columns, key=lambda col: col[-2:])
+    df = df[sorted_columns]
+
+    # define X and y
+    X_df = df.drop(columns=['score_diff_adj_x', 'win_x'])
+    y_numpy = df['win_x'].to_numpy()
+
+    # split data into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X_df, y_numpy, test_size=0.1, random_state=SEED)
+
+    # scale
+    scaler = RobustScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    # move to gpu   
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32).to(device)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.long).to(device)
+    X_test_tensor = torch.tensor(X_test, dtype=torch.float32).to(device)
+    y_test_tensor = torch.tensor(y_test, dtype=torch.long).to(device)
+
+    # define the two-tower neural network
+    class TwoTowerMLP(nn.Module):
+        def __init__(self, team_features, hidden_size_x, hidden_size_y, combined_hidden, dropout_rate):
+            super(TwoTowerMLP, self).__init__()
+            # Team X branch
+            self.team_x_branch = nn.Sequential(
+                nn.Linear(team_features, int(hidden_size_x)),
+                nn.ReLU(),
+                nn.Dropout(dropout_rate),
+                nn.Linear(int(hidden_size_x), int(hidden_size_x) // 2),
+                nn.ReLU()
+            )
+            # Team Y branch
+            self.team_y_branch = nn.Sequential(
+                nn.Linear(team_features, int(hidden_size_y)),
+                nn.ReLU(),
+                nn.Dropout(dropout_rate),
+                nn.Linear(int(hidden_size_y), int(hidden_size_y) // 2),
+                nn.ReLU()
+            )
+            # combined layers: note the input is the concatenation of the two branch outputs
+            combined_input_size = (int(hidden_size_x) // 2) + (int(hidden_size_y) // 2)
+            self.combined_layers = nn.Sequential(
+                nn.Linear(combined_input_size, int(combined_hidden)),
+                nn.ReLU(),
+                nn.Dropout(dropout_rate),
+                nn.Linear(int(combined_hidden), 1),
+                nn.Sigmoid()  # for binary probability output
+            )
+            
+        def forward(self, x):
+            # split input features into team X and team Y portions
+            team_x_input = x[:, :team_features] # first 42 features
+            team_y_input = x[:, team_features:] # last 42 features
+            out_x = self.team_x_branch(team_x_input)
+            out_y = self.team_y_branch(team_y_input)
+            combined = torch.cat([out_x, out_y], dim=1)
+            output = self.combined_layers(combined)
+            return output
+
+    # objective function for Bayesian optimization
+    def objective(hidden_size_x, hidden_size_y, combined_hidden, dropout_rate, lr, weight_decay):
+        # Convert parameters to appropriate types
+        hidden_size_x = int(hidden_size_x)
+        hidden_size_y = int(hidden_size_y)
+        combined_hidden = int(combined_hidden)
+        dropout_rate = float(dropout_rate)
+        lr = float(lr)
+        weight_decay = float(weight_decay)
+        
+        # instantiate the model with the given hyperparameters
+        model = TwoTowerMLP(team_features, hidden_size_x, hidden_size_y, combined_hidden, dropout_rate).to(device)
+        criterion = nn.BCELoss()  # binary cross entropy loss
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        
+        # train for a fixed number of epochs (adjust as needed)
+        n_epochs = 1000
+        model.train()
+        for epoch in range(n_epochs):
+            optimizer.zero_grad()
+            outputs = model(X_train_tensor).squeeze()  # shape: (batch_size,)
+            loss = criterion(outputs, y_train_tensor.float())
+            loss.backward()
+            optimizer.step()
+        
+        # evaluate on the validation set
+        model.eval()
+        with torch.no_grad():
+            val_outputs = model(X_test_tensor).squeeze()
+            val_outputs_np = val_outputs.cpu().numpy()
+            y_val_np = y_test_tensor.cpu().numpy()
+
+            # compute log loss (lower is better)
+            val_loss = log_loss(y_val_np, val_outputs_np)
+        
+        # return negative log loss because BayesianOptimization maximizes the objective
+        return -val_loss
+
+    # define the hyperparameter search space
+    pbounds = {
+        'hidden_size_x': (2, 256),     # first tower hidden size for team X
+        'hidden_size_y': (2, 256),     # first tower hidden size for team Y
+        'combined_hidden': (2, 256),   # hidden layer size after merging towers
+        'dropout_rate': (0.1, 0.9),    # dropout rate
+        'lr': (1e-5, 1e-1),            # learning rate
+        'weight_decay': (1e-5, 1e-1)   # L2 regularization
+    }
+
+    # initialize the Bayesian optimizer
+    optimizer_bo = BayesianOptimization(
+        f=objective,
+        pbounds=pbounds,
+        random_state=SEED,
+        verbose=2
+    )
+
+    # run the optimizer
+    optimizer_bo.maximize(init_points=init_points, n_iter=n_iter)
+
+    # extract best params
+    best_params = optimizer_bo.max['params']
+
+    # create and train best model
+    final_model = TwoTowerMLP(
+        team_features=team_features,
+        hidden_size_x=int(best_params['hidden_size_x']),
+        hidden_size_y=int(best_params['hidden_size_y']),
+        combined_hidden=int(best_params['combined_hidden']),
+        dropout_rate=float(best_params['dropout_rate'])
+    ).to(device)
+
+    # define final loss and optimizer
+    criterion = nn.BCELoss()
+    adam = optim.Adam(final_model.parameters(), lr=best_params['lr'], weight_decay=best_params['weight_decay'])
+
+    # train final model
+    final_model.train()
+    for epoch in range(1000):  # more epochs for final model
+        adam.zero_grad()
+        outputs = final_model(X_train_tensor)  # outputs: shape (N, 1)
+        
+        # make sure targets have shape (N, 1)
+        loss = criterion(outputs, y_train_tensor.float().unsqueeze(1))
+        loss.backward()
+        adam.step()
+
+    # evaluate final model
+    final_model.eval()
+    with torch.no_grad():
+        y_pred_prob = final_model(X_test_tensor).cpu().numpy()  # probabilities from sigmoid
+    final_loss = log_loss(y_test, y_pred_prob)
+
+    # for binary prediction, threshold at 0.5:
+    final_predictions = (y_pred_prob >= 0.5).astype(int)
+    final_acc = accuracy_score(y_test, final_predictions)
+    print('Final log loss of best model:', final_loss)
+    print('Final accuracy of best model:', final_acc)
