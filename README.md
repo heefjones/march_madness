@@ -1,5 +1,5 @@
-# [March Machine Learning Mania 2025](https://www.kaggle.com/competitions/march-machine-learning-mania-2024/overview) 🏀
-There are __9,223,372,036,854,775,808__ (2^63) possible bracket combinations. To guarantee a perfect bracket, each of the 8 billion people on Earth would need to generate over 1 billion unique brackets. This Kaggle competition tasked me with calculating win probabilities for all possible March Madness matchups in both the men's and women's tournaments.
+# March Machine Learning Mania 2025 🏀
+There are __9,223,372,036,854,775,808__ (2^63) possible bracket combinations. To guarantee a perfect bracket, each of the 8 billion people on Earth would need to generate over 1 billion unique brackets. This [Kaggle competition](https://www.kaggle.com/competitions/march-machine-learning-mania-2024/overview) tasked me with calculating win probabilities for all possible March Madness matchups in both the men's and women's tournaments.
 
 ## Data
 ### 1. Compact Dataset
