@@ -14,7 +14,7 @@ import itertools
 
 # machine learning
 from sklearn.base import is_classifier, clone
-from sklearn.model_selection import train_test_split, cross_val_score, cross_val_predict, KFold
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.metrics import root_mean_squared_error, r2_score, log_loss, accuracy_score
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -52,16 +52,15 @@ np.random.seed(SEED)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-def show_shape_and_nulls(df, nulls_view='df'):
+def show_shape_and_nulls(df):
     """
     Display the shape of a DataFrame and the number of null values in each column.
 
     Args:
     df (pd.DataFrame): The DataFrame to analyze.
-    nulls_view (str): Whether to return a DataFrame or print the null values. Options are 'df' and 'print'.
 
     Returns:
-    pd.DataFrame: A single-row DataFrame showing the count of null values for each column.
+    None
     """
 
     # print shape
@@ -71,10 +70,7 @@ def show_shape_and_nulls(df, nulls_view='df'):
     print('Null values:')
 
     # display null values
-    if nulls_view == 'df':
-        return df.isnull().sum().to_frame().T
-    elif nulls_view == 'print':
-        print(df.isnull().sum())
+    display(df.isnull().sum().to_frame().T)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -390,7 +386,7 @@ def cross_val_model(estimator, df, target_col, gender, scaler, models_df, folds=
     - target_col (str): Name of the target column ('win_x' for classification, 'score_diff_adj_x' for regression).
     - gender (str): 'm' or 'w'.
     - scaler (sklearn scaler, optional): Scaler to use for data. Default is None.
-    - models_df (pd.DataFrame): DataFrame to save model results to. Expected columns: ['Gender', 'Model', 'Scaler', 'Num_Features, 'Train_R2', 'Val_R2', 'Train_RMSE', 'Val_RMSE', 'Train_LogLoss', 'Val_LogLoss', 'Train_Acc', 'Val_Acc']
+    - models_df (pd.DataFrame): DataFrame to save model results to. Expected columns: ['Gender', 'Model', 'Model_Params', 'Scaler', 'Num_Features, 'Train_R2', 'Val_R2', 'Train_RMSE', 'Val_RMSE', 'Train_LogLoss', 'Val_LogLoss', 'Train_Acc', 'Val_Acc']
     - folds (int): Number of cross-validation folds to use. Default is 10.
     
     Returns:
