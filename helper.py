@@ -57,10 +57,10 @@ def show_shape_and_nulls(df):
     Display the shape of a DataFrame and the number of null values in each column.
 
     Args:
-    df (pd.DataFrame): The DataFrame to analyze.
+    - df (pd.DataFrame): The DataFrame to analyze.
 
     Returns:
-    None
+    - None
     """
 
     # print shape
@@ -80,10 +80,10 @@ def show_unique_vals(df):
     If a column has fewer than 20 unique values, print those values.
 
     Args:
-    df (pd.DataFrame): The DataFrame to analyze.
+    - df (pd.DataFrame): The DataFrame to analyze.
 
     Returns:
-    None
+    - None
     """
 
     # iterate over columns
@@ -104,10 +104,10 @@ def reshape_data(df):
     Reshape the data to have each game counted for both teams.
 
     Args:
-    df (pd.DataFrame): DataFrame containing the data.
+    - df (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    pd.DataFrame: Reshaped DataFrame.
+    - pd.DataFrame: Reshaped DataFrame.
     """
 
     # add 'LLoc' col
@@ -132,12 +132,12 @@ def split_genders(df, id_col):
     Split the df into mens and womens data.
 
     Args:
-    df (pd.DataFrame): DataFrame containing the data.
-    id_col (str): Column name containing the team ID.
+    - df (pd.DataFrame): DataFrame containing the data.
+    - id_col (str): Column name containing the team ID.
 
     Returns:
-    df_mens (pd.DataFrame): DataFrame containing mens data.
-    df_womens (pd.DataFrame): DataFrame containing womens data
+    - df_mens (pd.DataFrame): DataFrame containing mens data.
+    - df_womens (pd.DataFrame): DataFrame containing womens data
     """
 
     # error handling
@@ -153,32 +153,54 @@ def split_genders(df, id_col):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 def plot_overlapping_histograms(df1, df2, columns=None, labels=('Men\'s', 'Women\'s'), colors=None):
+    """
+    Plot overlapping histograms for two DataFrames.
+
+    Args:
+    - df1 (pd.DataFrame): First DataFrame.
+    - df2 (pd.DataFrame): Second DataFrame.
+    - columns (list, optional): Columns to plot. Default is None.
+    - labels (tuple, optional): Labels for the two DataFrames. Default is ('Men\'s', 'Women\'s').
+    - colors (list, optional): Colors for the histograms. Default is None.
+
+    Returns:
+    - None
+    """
+
+    # check for missing columns
     if columns is None:
         columns = list(set(df1.columns) & set(df2.columns))  
 
+    # check for missing colors
     if colors is None:
         colors = ['blue', 'red']
 
+    # plot histograms
     num_cols = len(columns)
     rows = math.ceil(num_cols / 2)  
 
+    # create subplots
     fig, axes = plt.subplots(rows, 2, figsize=(12, 4 * rows))
     axes = axes.flatten() if num_cols > 1 else [axes]
 
+    # iterate over columns
     for i, col in enumerate(columns):
+        # get min and max values to set bins
         min_value = min(df1[col].min(), df2[col].min())
         max_value = max(df1[col].max(), df2[col].max())
         bins = np.linspace(min_value, max_value, 30)
 
+        # plot histograms
         sns.histplot(df1[col], kde=True, color=colors[0], label=labels[0], alpha=0.5, bins=bins, stat='percent', common_norm=True, ax=axes[i])
         sns.histplot(df2[col], kde=True, color=colors[1], label=labels[1], alpha=0.5, bins=bins, stat='percent', common_norm=True, ax=axes[i])
         
+        # set title and legend
         axes[i].set_title(col)
         axes[i].legend()
 
+    # remove extra axes
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
-
     plt.tight_layout()
     plt.show()
 
@@ -186,13 +208,13 @@ def plot_overlapping_histograms(df1, df2, columns=None, labels=('Men\'s', 'Women
 
 def aggregate_compact_stats(df):
     """
-    Aggregate team stats for each season.
+    Aggregate team stats for each season on the compact dataset.
 
     Args:
-    df (pd.DataFrame): DataFrame containing the data.
+    - df (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    team_stats (pd.DataFrame): DataFrame containing aggregated team stats.
+    - team_stats (pd.DataFrame): DataFrame containing aggregated team stats.
     """
 
     # convert to polars
@@ -242,8 +264,17 @@ def aggregate_compact_stats(df):
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-# function to split the Seed value into Region, Seed number, and Play-in flag
 def split_seed(seed):
+    """
+    Split the Seed value into Region, Seed number, and Play-in flag.
+
+    Args:
+    - seed (str): Seed value.
+
+    Returns:
+    - tuple: Region, Seed number, Play-in flag.
+    """
+
     return seed[0], seed[1:], (1 if len(seed[1:]) > 2 else 0)
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -253,10 +284,10 @@ def assign_tournament_round(df):
     Creates a new column 'round' in the DataFrame that assigns a round number to each game. Assumes that play-in games are already filtered out.
 
     Args:
-    df (pd.DataFrame): DataFrame containing the data.
+    - df (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    pd.DataFrame: DataFrame with the 'round' column added
+    - pd.DataFrame: DataFrame with the 'round' column added
     """
 
     # assign round to 0 for all rows
@@ -307,11 +338,11 @@ def plot_upset_percentage(upsets, col):
     Plot the year-over-year upset percentage and upset sum.
 
     Args:
-    upsets (pd.DataFrame): DataFrame containing upset percentage and sum.
-    col (str): Column to plot.
+    - upsets (pd.DataFrame): DataFrame containing upset percentage and sum.
+    - col (str): Column to plot.
 
     Returns:
-    None
+    - None
     """
 
     # create figure and first axis
@@ -347,10 +378,10 @@ def get_dummy_preds(data):
     Generate dummy predictions based on seed and win ratio.
 
     Args:
-    data (pd.DataFrame): DataFrame containing the data.
+    - data (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    np.array: An array of dummy predictions.
+    - np.array: An array of dummy predictions.
     """
 
     # create a container
@@ -380,7 +411,7 @@ def cross_val_model(estimator, df, target_col, gender, scaler, models_df, folds=
     """
     Perform KFold cross validation on a given estimator and store evaluation metrics.
     
-    Parameters:
+    Args:
     - estimator (sklearn estimator): Estimator to use for modeling.
     - df (pd.DataFrame): Data to model.
     - target_col (str): Name of the target column ('win_x' for classification, 'score_diff_adj_x' for regression).
@@ -516,14 +547,14 @@ def evaluate_model(features_df, target_col, model, scaler, test_size=0.2):
     """
     Performs train-test split, fits the model, makes predictions, and returns predictions for evaluation.
 
-    args:
+    Args:
     - features_df (pd.DataFrame): dataframe with all features, including labels ('win_x' and 'score_diff_adj_x').
     - target_col (str): the target column to predict.
     - model (sklearn estimator): the model to fit and predict.
     - scaler (sklearn scaler): the scaler to use for feature scaling.
     - test_size (float, optional): proportion of data to use as test set. default is 0.2.
 
-    returns:
+    Returns:
     - results_df (pd.DataFrame): dataframe with test features, predictions, and correctness.
     """
 
@@ -578,6 +609,18 @@ def evaluate_model(features_df, target_col, model, scaler, test_size=0.2):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 def get_seeding_diff_groups(preds):
+    """
+    Create 3 unique seed difference groups and print accuracy.
+
+    Args:
+    - preds (pd.DataFrame): DataFrame containing predictions.
+
+    Returns:
+    - upset_wins (pd.DataFrame): DataFrame containing upsets.
+    - fav_wins (pd.DataFrame): DataFrame containing favorites.
+    - equal_seeds (pd.DataFrame): DataFrame containing equal seeds.
+    """
+
     # create seed_diff
     preds['seed_diff'] = np.abs(preds['Seed_num_x'] - preds['Seed_num_y'])
 
@@ -618,6 +661,16 @@ def get_seeding_diff_groups(preds):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 def generate_matchups(seeds):
+    """
+    Generate all possible matchups between teams.
+
+    Args:
+    - seeds (pd.DataFrame): DataFrame containing seeds.
+
+    Returns:
+    - matchups (pd.DataFrame): DataFrame containing all possible matchups.
+    """
+
     # split genders
     seeds_men, seeds_women = split_genders(seeds, id_col='TeamID')
 
@@ -643,6 +696,18 @@ def generate_matchups(seeds):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
 def get_2025_predictions(features, matchups, model, scaler):
+    """
+    Generate predictions for the 2025 tournament.
+
+    Args:
+    - features (pd.DataFrame): DataFrame containing features.
+    - matchups (pd.DataFrame): DataFrame containing matchups.
+    - model (sklearn estimator): Model to use for predictions.
+    - scaler (sklearn scaler): Scaler to use for features.
+
+    Returns:
+    - preds_x_df (pd.DataFrame): DataFrame containing predictions.
+    """
     
     # merge features with matchups
     X = pd.merge(matchups, features, left_on='T1', right_on='TeamID', how='inner', suffixes=('_x', '_y'))
@@ -675,13 +740,13 @@ def get_2025_predictions(features, matchups, model, scaler):
 
 def aggregate_detailed_stats(df):
     """
-    Aggregate team stats for each season.
+    Aggregate team stats for each season on the detailed dataset.
 
     Args:
-    df (pd.DataFrame): DataFrame containing the data.
+    - df (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    team_stats (pd.DataFrame): DataFrame containing aggregated team stats.
+    - team_stats (pd.DataFrame): DataFrame containing aggregated team stats.
     """
 
     # convert to polars
@@ -765,13 +830,14 @@ def bayes_opt_nn(df, init_points=10, n_iter=100):
     """
     Perform Bayesian optimization to tune hyperparameters of a two-tower neural network for a binary classification task.
 
-    Parameters:
+    Args:
     - df: DataFrame containing the features and labels
     - scaler: Scaler object to scale the features
     - init_points: Number of random points to sample before starting Bayesian optimization
     - n_iter: Number of optimization iterations
 
-    Returns: None
+    Returns: 
+    - None
     """
 
     # check for gpu
