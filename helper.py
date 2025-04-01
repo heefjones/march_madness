@@ -7,7 +7,6 @@ import seaborn as sns
 from tqdm import tqdm
 from scipy.stats import normaltest
 
-
 # algorithms
 import math
 import itertools
@@ -118,10 +117,7 @@ def reshape_data(df):
     lose_map = {col: col[1:] if col.startswith('L') else (col[1:] + '_opp' if col.startswith('W') else col) for col in df.columns}
 
     # reshape data to have each game counted for both teams
-    df = pd.concat([
-        df.rename(columns=win_map).assign(Win=1),
-        df.rename(columns=lose_map).assign(Win=0)
-    ])
+    df = pd.concat([df.rename(columns=win_map).assign(Win=1), df.rename(columns=lose_map).assign(Win=0)])
 
     return df
 
@@ -221,10 +217,7 @@ def aggregate_compact_stats(df):
     df_pl = pl.from_pandas(df)
 
     # Compute team stats efficiently
-    team_stats_pl = (
-        df_pl
-        .group_by(["Season", "TeamID"])
-        .agg([
+    team_stats_pl = (df_pl.group_by(["Season", "TeamID"]).agg([
             # wins
             pl.len().alias("num_games"),
             pl.col("Win").mean().alias("win_pct"),
@@ -255,9 +248,7 @@ def aggregate_compact_stats(df):
 
             # one-score + OT games
             ((pl.col("ScoreDiff").abs() <= 3) | (pl.col("NumOT") > 0)).mean().alias("close_games_pct"),
-            pl.col("Win").filter((pl.col("ScoreDiff").abs() <= 3) | (pl.col("NumOT") > 0)).mean().alias("close_games_win_pct")
-        ])
-    )
+            pl.col("Win").filter((pl.col("ScoreDiff").abs() <= 3) | (pl.col("NumOT") > 0)).mean().alias("close_games_win_pct")]))
 
     # convert back to pandas
     return team_stats_pl.to_pandas()
@@ -272,7 +263,7 @@ def split_seed(seed):
     - seed (str): Seed value.
 
     Returns:
-    - tuple: Region, Seed number, Play-in flag.
+    - (tuple): Region, Seed number, Play-in flag.
     """
 
     return seed[0], seed[1:], (1 if len(seed[1:]) > 2 else 0)
@@ -287,7 +278,7 @@ def assign_tournament_round(df):
     - df (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    - pd.DataFrame: DataFrame with the 'round' column added
+    - (pd.DataFrame): DataFrame with the 'round' column added
     """
 
     # assign round to 0 for all rows
@@ -381,7 +372,7 @@ def get_dummy_preds(data):
     - data (pd.DataFrame): DataFrame containing the data.
 
     Returns:
-    - np.array: An array of dummy predictions.
+    - (np.array): An array of dummy predictions.
     """
 
     # create a container
@@ -521,8 +512,7 @@ def cross_val_model(estimator, df, target_col, gender, scaler, models_df, folds=
         val_acc_list.append(val_acc)
     
     # prepare a new row with averages
-    new_row = {
-        'Gender': gender,
+    new_row = {'Gender': gender,
         'Target': target_col,
         'Model': estimator.__class__.__name__,
         'Model_Params': str(estimator.get_params()),
@@ -535,8 +525,7 @@ def cross_val_model(estimator, df, target_col, gender, scaler, models_df, folds=
         'Train_LogLoss': np.mean(train_logloss_list),
         'Val_LogLoss': np.mean(val_logloss_list),
         'Train_Acc': np.mean(train_acc_list),
-        'Val_Acc': np.mean(val_acc_list)
-    }
+        'Val_Acc': np.mean(val_acc_list)}
 
     # append the new row
     models_df.loc[len(models_df)] = new_row
@@ -753,10 +742,7 @@ def aggregate_detailed_stats(df):
     df_pl = pl.from_pandas(df)
 
     # compute team stats
-    team_stats_pl = (
-        df_pl
-        .group_by(["Season", "TeamID"])
-        .agg([
+    team_stats_pl = (df_pl.group_by(["Season", "TeamID"]).agg([
             # wins
             pl.len().alias("num_games"),
             pl.col("Win").mean().alias("win_pct"),
@@ -817,9 +803,7 @@ def aggregate_detailed_stats(df):
             pl.col("PF").mean().alias("mean_fouls"),
             pl.col("PF").std().alias("std_fouls"),
             pl.col("PF_opp").mean().alias("mean_fouls_against"),
-            pl.col("PF_opp").std().alias("std_fouls_against")
-        ])
-    )
+            pl.col("PF_opp").std().alias("std_fouls_against")]))
 
     # convert back to pandas
     return team_stats_pl.to_pandas()
@@ -880,16 +864,16 @@ def bayes_opt_nn(df, init_points=10, n_iter=100):
                 nn.ReLU(),
                 nn.Dropout(dropout_rate),
                 nn.Linear(int(hidden_size_x), int(hidden_size_x) // 2),
-                nn.ReLU()
-            )
+                nn.ReLU())
+            
             # Team Y branch
             self.team_y_branch = nn.Sequential(
                 nn.Linear(team_features, int(hidden_size_y)),
                 nn.ReLU(),
                 nn.Dropout(dropout_rate),
                 nn.Linear(int(hidden_size_y), int(hidden_size_y) // 2),
-                nn.ReLU()
-            )
+                nn.ReLU())
+            
             # combined layers: note the input is the concatenation of the two branch outputs
             combined_input_size = (int(hidden_size_x) // 2) + (int(hidden_size_y) // 2)
             self.combined_layers = nn.Sequential(
@@ -897,8 +881,7 @@ def bayes_opt_nn(df, init_points=10, n_iter=100):
                 nn.ReLU(),
                 nn.Dropout(dropout_rate),
                 nn.Linear(int(combined_hidden), 1),
-                nn.Sigmoid()  # for binary probability output
-            )
+                nn.Sigmoid())
             
         def forward(self, x):
             # split input features into team X and team Y portions
@@ -959,12 +942,7 @@ def bayes_opt_nn(df, init_points=10, n_iter=100):
     }
 
     # initialize the Bayesian optimizer
-    optimizer_bo = BayesianOptimization(
-        f=objective,
-        pbounds=pbounds,
-        random_state=SEED,
-        verbose=2
-    )
+    optimizer_bo = BayesianOptimization(f=objective, pbounds=pbounds, random_state=SEED, verbose=2)
 
     # run the optimizer
     optimizer_bo.maximize(init_points=init_points, n_iter=n_iter)
@@ -978,8 +956,7 @@ def bayes_opt_nn(df, init_points=10, n_iter=100):
         hidden_size_x=int(best_params['hidden_size_x']),
         hidden_size_y=int(best_params['hidden_size_y']),
         combined_hidden=int(best_params['combined_hidden']),
-        dropout_rate=float(best_params['dropout_rate'])
-    ).to(device)
+        dropout_rate=float(best_params['dropout_rate'])).to(device)
 
     # define final loss and optimizer
     criterion = nn.BCELoss()
